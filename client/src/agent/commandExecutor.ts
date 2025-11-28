@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { SceneObject } from '../objects/factory';
+import { parseAIResponse } from './aiResponseParser';
+import { createComplexObject } from '../objects/complexObjectFactory';
 
 export interface CommandResponse {
   action: 'none' | 'create' | 'move' | 'scale' | 'recolor' | 'delete' | 'clear' | 'reset';
@@ -23,6 +25,36 @@ export function executeCommand(
   }
 ): string {
   const action = (command.action || 'none').toLowerCase();
+
+  // First, try to parse AI response for complex objects
+  if (command.response) {
+    const parsed = parseAIResponse(command.response);
+    
+    if (parsed) {
+      if (parsed.type === 'complex') {
+        // Create complex object from AI description
+        const id = createComplexObject(scene, parsed);
+        return `Created ${parsed.name}! ${parsed.description}`;
+      } else if (parsed.type === 'simple' && parsed.simpleType) {
+        // Create simple object using existing builders
+        let newId: string | undefined;
+        
+        if (parsed.simpleType === 'box') {
+          newId = builders.box(parsed.color, parsed.scale);
+        } else if (parsed.simpleType === 'couch') {
+          newId = builders.couch(parsed.color, parsed.scale);
+        } else if (parsed.simpleType === 'table') {
+          newId = builders.table(parsed.color, parsed.scale);
+        } else if (parsed.simpleType === 'lamp') {
+          newId = builders.lamp(parsed.color);
+        }
+        
+        if (newId) {
+          return `Created ${parsed.name}!`;
+        }
+      }
+    }
+  }
 
   if (action === 'clear' || action === 'reset') {
     objects.forEach(obj => scene.remove(obj));

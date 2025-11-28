@@ -4,6 +4,8 @@ export interface SceneObject extends THREE.Group {
   userData: {
     id: string;
     type: 'box' | 'couch' | 'table' | 'lamp';
+    selectable?: boolean;
+    color?: string;
   };
 }
 
@@ -23,7 +25,7 @@ export function createBox(scene: THREE.Scene, color: string = '#2563eb', scale: 
   mesh.receiveShadow = true;
 
   const group = new THREE.Group() as SceneObject;
-  group.userData = { id, type: 'box' };
+  group.userData = { id, type: 'box', selectable: true, color };
   group.add(mesh);
   group.position.set(getRandomPos(), 0.5 * scale, getRandomPos());
 
@@ -36,7 +38,7 @@ export function createBox(scene: THREE.Scene, color: string = '#2563eb', scale: 
 export function createCouch(scene: THREE.Scene, color: string = '#8b5a3c', scale: number = 1): string {
   const id = generateObjectId();
   const group = new THREE.Group() as SceneObject;
-  group.userData = { id, type: 'couch' };
+  group.userData = { id, type: 'couch', selectable: true, color };
 
   // Seat
   const seatGeometry = new THREE.BoxGeometry(2 * scale, 0.5 * scale, 1 * scale);
@@ -75,7 +77,7 @@ export function createCouch(scene: THREE.Scene, color: string = '#8b5a3c', scale
 export function createTable(scene: THREE.Scene, color: string = '#8b7355', scale: number = 1): string {
   const id = generateObjectId();
   const group = new THREE.Group() as SceneObject;
-  group.userData = { id, type: 'table' };
+  group.userData = { id, type: 'table', selectable: true, color };
 
   // Top
   const topGeometry = new THREE.BoxGeometry(1.5 * scale, 0.1 * scale, 1 * scale);
@@ -113,7 +115,7 @@ export function createTable(scene: THREE.Scene, color: string = '#8b7355', scale
 export function createLamp(scene: THREE.Scene, color: string = '#ffff00'): string {
   const id = generateObjectId();
   const group = new THREE.Group() as SceneObject;
-  group.userData = { id, type: 'lamp' };
+  group.userData = { id, type: 'lamp', selectable: true, color };
 
   // Base
   const baseGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.1, 32);

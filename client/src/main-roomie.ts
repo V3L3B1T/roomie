@@ -25,6 +25,9 @@ import {
   maxRoomRadius,
 } from './io/controls';
 import { ChatManager } from './ui/chat';
+import { CharacterEditor } from './ui/characterEditor';
+import { ObjectEditor } from './ui/objectEditor';
+import { ObjectSelector } from './agent/objectSelector';
 import { sendPromptToWebhook } from './network/webhookClient';
 import { executeCommand } from './agent/commandExecutor';
 
@@ -51,11 +54,15 @@ const chatHistory = document.getElementById('chat-history')!;
 const userInput = document.getElementById('user-input') as HTMLInputElement;
 const chatManager = new ChatManager(chatHistory, userInput);
 
+// Initialize editors
+const characterEditor = new CharacterEditor(document.body);
+const objectEditor = new ObjectEditor(document.body);
+const objectSelector = new ObjectSelector(scene, camera);
+
 // Create room boundaries (4 walls)
 let roomWalls: THREE.Mesh[] = [];
 
 function createRoomBoundaries(): void {
-  // Remove old walls
   roomWalls.forEach(wall => scene.remove(wall));
   roomWalls = [];
 
@@ -63,14 +70,12 @@ function createRoomBoundaries(): void {
   const wallThickness = 0.2;
   const radius = roomState.radius;
 
-  // Wall material
   const wallMaterial = new THREE.MeshStandardMaterial({
     color: 0x888888,
     metalness: 0.3,
     roughness: 0.7,
   });
 
-  // North wall
   const northWall = new THREE.Mesh(
     new THREE.BoxGeometry(radius * 2, wallHeight, wallThickness),
     wallMaterial
@@ -80,7 +85,6 @@ function createRoomBoundaries(): void {
   scene.add(northWall);
   roomWalls.push(northWall);
 
-  // South wall
   const southWall = new THREE.Mesh(
     new THREE.BoxGeometry(radius * 2, wallHeight, wallThickness),
     wallMaterial
@@ -90,7 +94,6 @@ function createRoomBoundaries(): void {
   scene.add(southWall);
   roomWalls.push(southWall);
 
-  // East wall
   const eastWall = new THREE.Mesh(
     new THREE.BoxGeometry(wallThickness, wallHeight, radius * 2),
     wallMaterial
@@ -100,7 +103,6 @@ function createRoomBoundaries(): void {
   scene.add(eastWall);
   roomWalls.push(eastWall);
 
-  // West wall
   const westWall = new THREE.Mesh(
     new THREE.BoxGeometry(wallThickness, wallHeight, radius * 2),
     wallMaterial
@@ -163,12 +165,12 @@ function createRadiusControls(): void {
     <div style="margin-top: 12px; font-size: 0.8rem; color: #666; line-height: 1.4;">
       <div><strong>SPACE</strong> - Jump</div>
       <div><strong>TAB</strong> - Character Editor</div>
+      <div><strong>Click Objects</strong> - Edit</div>
     </div>
   `;
 
   document.body.appendChild(controlsDiv);
 
-  // Setup event listeners
   const slider = document.getElementById('radius-slider') as HTMLInputElement;
   const minusBtn = document.getElementById('radius-minus') as HTMLButtonElement;
   const plusBtn = document.getElementById('radius-plus') as HTMLButtonElement;
@@ -197,7 +199,12 @@ function createRadiusControls(): void {
 // Setup controls
 setupKeyboardControls(moveState, userInput, editorState, () => {
   if (editorState.isOpen) {
-    chatManager.addMessage('Character editor opened (TAB to close)', 'agent');
+    characterEditor.open((colors) => {
+      youBoi.userData.characterColors = colors;
+      chatManager.addMessage('Character customized!', 'agent');
+    });
+  } else {
+    characterEditor.close();
   }
 });
 
@@ -207,6 +214,20 @@ setupMouseControls(renderer.domElement, cameraState, (looking: boolean) => {
     return looking;
   }
   return false;
+});
+
+// Setup object selector
+objectSelector.setupClickHandler(renderer.domElement, (selectedObject) => {
+  if (selectedObject) {
+    objectEditor.selectObject(selectedObject, (state) => {
+      if (state.selectedObject === null) {
+        deleteObject(scene, selectedObject.userData.id);
+        objectEditor.deselect();
+      }
+    });
+  } else {
+    objectEditor.deselect();
+  }
 });
 
 // Handle user input
@@ -277,24 +298,20 @@ function updatePlayer(): void {
 
   youBoi.rotation.y = cameraState.yaw;
 
-  // Handle jumping
   if (moveState.jump && isGrounded) {
     verticalVelocity = jumpForce;
     isGrounded = false;
   }
 
-  // Apply gravity
   verticalVelocity -= gravity;
   youBoi.position.y += verticalVelocity;
 
-  // Ground collision
   if (youBoi.position.y <= 0) {
     youBoi.position.y = 0;
     verticalVelocity = 0;
     isGrounded = true;
   }
 
-  // Horizontal movement
   if (deltaX !== 0 || deltaZ !== 0) {
     isMoving = true;
 
@@ -313,10 +330,9 @@ function updatePlayer(): void {
     isMoving = false;
   }
 
-  // Boundary collision
-  const radius = roomState.radius - 1; // 1 unit buffer from wall
+  const radius = roomState.radius - 1;
   const distance = Math.sqrt(youBoi.position.x ** 2 + youBoi.position.z ** 2);
-  
+
   if (distance > radius) {
     const angle = Math.atan2(youBoi.position.z, youBoi.position.x);
     youBoi.position.x = Math.cos(angle) * radius;
@@ -359,6 +375,7 @@ function animate(): void {
     updateYouBoiAnimation(youBoi, isMoving, delta);
   }
 
+  objectSelector.updateOutlineTransform();
   renderer.render(scene, camera);
 }
 

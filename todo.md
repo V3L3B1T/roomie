@@ -95,3 +95,13 @@
 - [x] Implement position controls (X, Y, Z)
 - [x] Test all editing features
 - [ ] Commit to GitHub
+
+## Phase 12: Bug Fixes & Polish
+- [x] Fix webhook to POST directly to n8n URL (bypass backend proxy)
+- [x] Implement character color changes to actually affect avatar mesh
+- [x] Fix camera tilting and jumping during movement
+- [x] Fix SPACE jump to move character vertically (1m smooth arc)
+- [x] Remove unnecessary chat notifications
+- [x] Polish camera smoothness and stability
+- [x] Test all fixes
+- [ ] Commit to GitHub

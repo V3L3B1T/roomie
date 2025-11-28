@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { initScene, handleWindowResize } from './engine/scene';
-import { createYouBoi, updateYouBoiAnimation } from './avatar/youBoi';
+import { createYouBoi, updateYouBoiAnimation, updateYouBoiColors } from './avatar/youBoi';
 import {
   createBox,
   createCouch,
@@ -18,8 +18,6 @@ import {
   setupKeyboardControls,
   setupMouseControls,
   playerSpeed,
-  jumpForce,
-  gravity,
   defaultRoomRadius,
   minRoomRadius,
   maxRoomRadius,
@@ -47,7 +45,14 @@ let isMoving = false;
 let isLooking = false;
 let verticalVelocity = 0;
 let isGrounded = true;
+let baseYPosition = 0; // Track base Y position for jumping
 const cameraState = { yaw: 0, pitch: 0 };
+
+// Jump constants
+const JUMP_HEIGHT = 1.0; // 1 meter jump
+const JUMP_DURATION = 0.4; // seconds
+let jumpStartTime = 0;
+let isJumping = false;
 
 // Initialize chat
 const chatHistory = document.getElementById('chat-history')!;
@@ -200,8 +205,7 @@ function createRadiusControls(): void {
 setupKeyboardControls(moveState, userInput, editorState, () => {
   if (editorState.isOpen) {
     characterEditor.open((colors) => {
-      youBoi.userData.characterColors = colors;
-      chatManager.addMessage('Character customized!', 'agent');
+      updateYouBoiColors(youBoi, colors);
     });
   } else {
     characterEditor.close();
@@ -289,8 +293,8 @@ userInput.addEventListener('keydown', (e) => {
   }
 });
 
-// Update player position with jumping and boundary collision
-function updatePlayer(): void {
+// Update player position with improved jumping and boundary collision
+function updatePlayer(delta: number): void {
   if (youBoi.userData.state !== 'standing') return;
 
   const deltaX = (moveState.right ? 1 : moveState.left ? -1 : 0);
@@ -298,20 +302,27 @@ function updatePlayer(): void {
 
   youBoi.rotation.y = cameraState.yaw;
 
-  if (moveState.jump && isGrounded) {
-    verticalVelocity = jumpForce;
-    isGrounded = false;
+  // Handle jumping with fixed 1m height
+  if (moveState.jump && !isJumping) {
+    isJumping = true;
+    jumpStartTime = performance.now() / 1000;
   }
 
-  verticalVelocity -= gravity;
-  youBoi.position.y += verticalVelocity;
+  if (isJumping) {
+    const elapsed = (performance.now() / 1000) - jumpStartTime;
+    const progress = Math.min(elapsed / JUMP_DURATION, 1);
 
-  if (youBoi.position.y <= 0) {
-    youBoi.position.y = 0;
-    verticalVelocity = 0;
-    isGrounded = true;
+    // Smooth arc using sine wave
+    const jumpProgress = Math.sin(progress * Math.PI);
+    youBoi.position.y = baseYPosition + (jumpProgress * JUMP_HEIGHT);
+
+    if (progress >= 1) {
+      isJumping = false;
+      youBoi.position.y = baseYPosition;
+    }
   }
 
+  // Horizontal movement
   if (deltaX !== 0 || deltaZ !== 0) {
     isMoving = true;
 
@@ -330,6 +341,7 @@ function updatePlayer(): void {
     isMoving = false;
   }
 
+  // Boundary collision
   const radius = roomState.radius - 1;
   const distance = Math.sqrt(youBoi.position.x ** 2 + youBoi.position.z ** 2);
 
@@ -340,23 +352,34 @@ function updatePlayer(): void {
   }
 }
 
-// Update camera
+// Update camera with stable positioning
 function updateCamera(): void {
-  const targetPosition = youBoi.position.clone().add(new THREE.Vector3(0, 1.0, 0));
+  // Calculate target position at character's center
+  const targetPosition = new THREE.Vector3(
+    youBoi.position.x,
+    youBoi.position.y + 1.0,
+    youBoi.position.z
+  );
 
   const cameraDistance = 3.5;
   const cameraHeight = 1.5;
 
+  // Calculate camera position based on yaw (horizontal rotation only)
   const cameraPosition = new THREE.Vector3(
     targetPosition.x - cameraDistance * Math.sin(cameraState.yaw),
     targetPosition.y + cameraHeight,
     targetPosition.z - cameraDistance * Math.cos(cameraState.yaw)
   );
 
-  camera.position.lerp(cameraPosition, 0.2);
+  // Smooth camera movement
+  camera.position.lerp(cameraPosition, 0.15);
 
-  const lookAtPosition = targetPosition.clone();
-  lookAtPosition.y += Math.tan(cameraState.pitch) * cameraDistance;
+  // Calculate look-at point with pitch
+  const lookAtPosition = new THREE.Vector3(
+    targetPosition.x,
+    targetPosition.y + Math.tan(cameraState.pitch) * cameraDistance * 0.5,
+    targetPosition.z
+  );
 
   camera.lookAt(lookAtPosition);
 }
@@ -370,7 +393,7 @@ function animate(): void {
   const delta = clock.getDelta();
 
   if (youBoi.userData.state === 'standing') {
-    updatePlayer();
+    updatePlayer(delta);
     updateCamera();
     updateYouBoiAnimation(youBoi, isMoving, delta);
   }

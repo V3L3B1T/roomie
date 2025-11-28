@@ -5,10 +5,12 @@ export interface YouBoiState {
   type: 'avatar';
   state: 'standing' | 'sitting';
   walkCycle: number;
-  leftLeg?: THREE.Object3D;
-  rightLeg?: THREE.Object3D;
-  leftArm?: THREE.Object3D;
-  rightArm?: THREE.Object3D;
+  leftLeg?: THREE.Mesh;
+  rightLeg?: THREE.Mesh;
+  leftArm?: THREE.Mesh;
+  rightArm?: THREE.Mesh;
+  head?: THREE.Mesh;
+  body?: THREE.Mesh;
 }
 
 export function createYouBoi(): THREE.Group & { userData: YouBoiState } {
@@ -23,24 +25,29 @@ export function createYouBoi(): THREE.Group & { userData: YouBoiState } {
 
   // Head
   const headGeometry = new THREE.SphereGeometry(0.25, 32, 32);
-  const headMaterial = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+  const headMaterial = new THREE.MeshStandardMaterial({ color: 0xd4a574 });
   const head = new THREE.Mesh(headGeometry, headMaterial);
+  head.name = 'head';
   head.position.y = 0.75;
   head.castShadow = true;
   youBoi.add(head);
+  youBoi.userData.head = head;
 
   // Body
   const bodyGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.4, 32);
   const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x2563eb });
   const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+  body.name = 'body';
   body.position.y = 0.4;
   body.castShadow = true;
   youBoi.add(body);
+  youBoi.userData.body = body;
 
   // Left Leg
   const leftLegGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 16);
   const legMaterial = new THREE.MeshStandardMaterial({ color: 0x1f2937 });
   const leftLeg = new THREE.Mesh(leftLegGeometry, legMaterial);
+  leftLeg.name = 'leftLeg';
   leftLeg.position.set(-0.1, 0.15, 0);
   leftLeg.castShadow = true;
   youBoi.add(leftLeg);
@@ -48,6 +55,7 @@ export function createYouBoi(): THREE.Group & { userData: YouBoiState } {
 
   // Right Leg
   const rightLeg = new THREE.Mesh(leftLegGeometry, legMaterial);
+  rightLeg.name = 'rightLeg';
   rightLeg.position.set(0.1, 0.15, 0);
   rightLeg.castShadow = true;
   youBoi.add(rightLeg);
@@ -55,8 +63,9 @@ export function createYouBoi(): THREE.Group & { userData: YouBoiState } {
 
   // Left Arm
   const armGeometry = new THREE.CylinderGeometry(0.06, 0.06, 0.35, 16);
-  const armMaterial = new THREE.MeshStandardMaterial({ color: 0xffdbac });
+  const armMaterial = new THREE.MeshStandardMaterial({ color: 0xd4a574 });
   const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+  leftArm.name = 'leftArm';
   leftArm.position.set(-0.25, 0.5, 0);
   leftArm.castShadow = true;
   youBoi.add(leftArm);
@@ -64,12 +73,37 @@ export function createYouBoi(): THREE.Group & { userData: YouBoiState } {
 
   // Right Arm
   const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+  rightArm.name = 'rightArm';
   rightArm.position.set(0.25, 0.5, 0);
   rightArm.castShadow = true;
   youBoi.add(rightArm);
   youBoi.userData.rightArm = rightArm;
 
   return youBoi;
+}
+
+export function updateYouBoiColors(
+  youBoi: THREE.Group & { userData: YouBoiState },
+  colors: { head: string; body: string; arms: string; legs: string }
+): void {
+  if (youBoi.userData.head) {
+    (youBoi.userData.head.material as THREE.MeshStandardMaterial).color.setStyle(colors.head);
+  }
+  if (youBoi.userData.body) {
+    (youBoi.userData.body.material as THREE.MeshStandardMaterial).color.setStyle(colors.body);
+  }
+  if (youBoi.userData.leftArm) {
+    (youBoi.userData.leftArm.material as THREE.MeshStandardMaterial).color.setStyle(colors.arms);
+  }
+  if (youBoi.userData.rightArm) {
+    (youBoi.userData.rightArm.material as THREE.MeshStandardMaterial).color.setStyle(colors.arms);
+  }
+  if (youBoi.userData.leftLeg) {
+    (youBoi.userData.leftLeg.material as THREE.MeshStandardMaterial).color.setStyle(colors.legs);
+  }
+  if (youBoi.userData.rightLeg) {
+    (youBoi.userData.rightLeg.material as THREE.MeshStandardMaterial).color.setStyle(colors.legs);
+  }
 }
 
 export function updateYouBoiAnimation(

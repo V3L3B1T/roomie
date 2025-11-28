@@ -1,8 +1,7 @@
 import { CommandResponse } from '../agent/commandExecutor';
 
-// Hard-coded webhook URL for prototype
+// Hard-coded webhook URL for prototype - POST directly to n8n
 const WEBHOOK_URL = 'https://v3l3b1t.app.n8n.cloud/webhook/3a1c7269-29ff-42b5-a8b3-75047c74bcd0';
-const API_URL = import.meta.env.VITE_ROOMIE_API_URL || WEBHOOK_URL;
 
 export interface WebhookRequest {
   prompt: string;
@@ -17,7 +16,7 @@ export async function sendPromptToWebhook(
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const response = await fetch(API_URL, {
+      const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

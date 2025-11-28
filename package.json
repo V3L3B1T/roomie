@@ -89,6 +89,7 @@
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@types/three": "^0.181.0",
+    "@vercel/node": "^5.5.13",
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",

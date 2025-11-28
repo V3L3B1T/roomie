@@ -1,6 +1,8 @@
 import { CommandResponse } from '../agent/commandExecutor';
 
-const API_URL = import.meta.env.VITE_ROOMIE_API_URL || '/api/roomie';
+// Hard-coded webhook URL for prototype
+const WEBHOOK_URL = 'https://v3l3b1t.app.n8n.cloud/webhook/3a1c7269-29ff-42b5-a8b3-75047c74bcd0';
+const API_URL = import.meta.env.VITE_ROOMIE_API_URL || WEBHOOK_URL;
 
 export interface WebhookRequest {
   prompt: string;

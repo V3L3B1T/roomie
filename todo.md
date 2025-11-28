@@ -74,3 +74,12 @@
 - [x] Update DEPLOYMENT.md with Vercel + Render architecture
 - [x] Create .env.production.example file
 - [ ] Push changes to GitHub
+
+## Phase 10: Gameplay Enhancements
+- [x] Hard-code webhook URL for prototype
+- [x] Implement character jumping with SPACE key
+- [x] Create character model editor toggle (TAB key)
+- [x] Add room boundaries with 4 walls
+- [x] Add radius slider control in UI
+- [x] Implement boundary collision detection
+- [ ] Commit to GitHub

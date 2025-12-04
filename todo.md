@@ -132,3 +132,15 @@
 - [ ] Add detailed chess set models (optional)
 - [ ] Test all interactions end-to-end
 - [ ] Commit to GitHub
+
+## Phase 15: User Feedback Polish
+- [x] Implement right-click for editing (preserve left-click for actions)
+- [ ] Fix character jump - model should move, not just camera
+- [x] Replace youBoi with provided GLB character model
+- [x] Create proper chess piece shapes (king, queen, rook, knight, bishop, pawn)
+- [x] Make chessboard checkered pattern (black/white squares)
+- [x] Fix camera perspective - W always moves north (world-space movement)
+- [x] Increase car speed to 40 m/s (was 20 m/s)
+- [ ] Search for and add better car GLB model
+- [ ] Test all fixes end-to-end
+- [ ] Commit to GitHub

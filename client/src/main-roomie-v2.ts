@@ -12,6 +12,7 @@
 import * as THREE from 'three';
 import { initScene, handleWindowResize } from './engine/scene';
 import { createYouBoi, updateYouBoiAnimation, updateYouBoiColors } from './avatar/youBoi';
+import { loadGLBCharacter, createFallbackCharacter, updateGLBCharacterAnimation } from './avatar/glbCharacter';
 import { ChatManager } from './ui/chat';
 import { CharacterEditor } from './ui/characterEditor';
 import { ObjectEditor } from './ui/objectEditor';
@@ -50,9 +51,28 @@ console.log(`[Roomie] Using ${USE_NEW_ENGINE ? 'NEW' : 'OLD'} engine`);
 const container = document.getElementById('canvas-container')!;
 const { scene, camera, renderer } = initScene(container);
 
-// Initialize avatar
-const youBoi = createYouBoi();
+// Initialize avatar (will be replaced with GLB model)
+let youBoi = createYouBoi();
 scene.add(youBoi);
+
+// Load GLB character model asynchronously
+loadGLBCharacter()
+  .then((glbCharacter) => {
+    // Remove old youBoi
+    scene.remove(youBoi);
+    
+    // Replace with GLB character
+    youBoi = glbCharacter;
+    scene.add(youBoi);
+    
+    // Update behavior engine reference
+    behaviorEngine.setCharacter(youBoi);
+    
+    console.log('[Main] GLB character loaded and replaced youBoi');
+  })
+  .catch((error) => {
+    console.warn('[Main] Failed to load GLB character, using fallback:', error);
+  });
 
 // ============================================================================
 // NEW ENGINE: Registries & Behavior System
@@ -336,46 +356,52 @@ setupMouseControls(renderer.domElement, cameraState, (looking: boolean) => {
 // ============================================================================
 // Object Selection & Click Events (NEW ENGINE)
 // ============================================================================
-objectSelector.setupClickHandler(renderer.domElement, (selectedObject) => {
-  console.log('[Click] Click detected', selectedObject ? {
-    name: selectedObject.name,
-    instanceId: selectedObject.userData.instanceId,
-    shapeId: selectedObject.userData.shapeId,
-    selectable: selectedObject.userData.selectable,
-  } : 'no object');
+objectSelector.setupClickHandler(
+  renderer.domElement,
+  // Left-click: Fire behavior events (lamp toggle, chess move, etc.)
+  (selectedObject) => {
+    console.log('[Left-Click] Action click', selectedObject ? {
+      name: selectedObject.name,
+      instanceId: selectedObject.userData.instanceId,
+      shapeId: selectedObject.userData.shapeId,
+    } : 'no object');
 
-  if (USE_NEW_ENGINE && selectedObject) {
-    // Fire click event to behavior engine
-    const instanceId = selectedObject.userData.instanceId;
-    if (instanceId) {
-      const event: GameEvent = {
-        type: 'click',
-        instanceId,
-        position: selectedObject.position,
-      };
-      console.log(`[Click] Firing GameEvent to BehaviorEngine:`, event);
-      behaviorEngine.handleEvent(event);
+    if (USE_NEW_ENGINE && selectedObject) {
+      const instanceId = selectedObject.userData.instanceId;
+      if (instanceId) {
+        const event: GameEvent = {
+          type: 'click',
+          instanceId,
+          position: selectedObject.position,
+        };
+        console.log(`[Left-Click] Firing GameEvent to BehaviorEngine:`, event);
+        behaviorEngine.handleEvent(event);
+      }
+    }
+  },
+  // Right-click: Open object editor
+  (selectedObject) => {
+    console.log('[Right-Click] Edit mode', selectedObject ? {
+      name: selectedObject.name,
+      instanceId: selectedObject.userData.instanceId,
+    } : 'no object');
+
+    if (selectedObject) {
+      objectEditor.selectObject(selectedObject, (state) => {
+        if (state.selectedObject === null && selectedObject.userData.instanceId) {
+          // Remove from registries
+          const registered = instanceRegistry.remove(selectedObject.userData.instanceId);
+          if (registered) {
+            scene.remove(registered.object3D);
+          }
+          objectEditor.deselect();
+        }
+      });
     } else {
-      console.warn('[Click] Object has no instanceId:', selectedObject);
+      objectEditor.deselect();
     }
   }
-
-  // Also handle object editor (old system)
-  if (selectedObject) {
-    objectEditor.selectObject(selectedObject, (state) => {
-      if (state.selectedObject === null && selectedObject.userData.instanceId) {
-        // Remove from registries
-        const registered = instanceRegistry.remove(selectedObject.userData.instanceId);
-        if (registered) {
-          scene.remove(registered.object3D);
-        }
-        objectEditor.deselect();
-      }
-    });
-  } else {
-    objectEditor.deselect();
-  }
-});
+);
 
 // ============================================================================
 // Chat Input Handler (NEW ENGINE)
@@ -434,9 +460,9 @@ function updatePlayer(delta: number): void {
   if (deltaX !== 0 || deltaZ !== 0) {
     isMoving = true;
 
-    const angle = cameraState.yaw;
-    const moveX = deltaX * Math.cos(angle) - deltaZ * Math.sin(angle);
-    const moveZ = deltaX * Math.sin(angle) + deltaZ * Math.cos(angle);
+    // World-space movement: W = north (-Z), S = south (+Z), A = west (-X), D = east (+X)
+    const moveX = deltaX;
+    const moveZ = deltaZ;
 
     const speed = 5;
     youBoi.position.x += moveX * speed * delta;

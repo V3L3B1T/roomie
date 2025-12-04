@@ -189,8 +189,8 @@ export class VehicleBehavior implements Behavior {
 
   private updateVehicleMovement(delta: number): void {
     // Config with higher defaults
-    const maxSpeed = this.config.maxSpeed || 20; // Much faster!
-    const acceleration = this.config.acceleration || 15; // Quicker acceleration
+    const maxSpeed = this.config.maxSpeed || 40; // Very fast!
+    const acceleration = this.config.acceleration || 25; // Very quick acceleration
     const braking = this.config.braking || 10;
     const turnSpeed = this.config.turnSpeed || 2.5;
 

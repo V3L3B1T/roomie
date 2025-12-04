@@ -16,9 +16,14 @@ export class ObjectSelector {
     this.camera = camera;
   }
 
-  setupClickHandler(canvas: HTMLCanvasElement, onSelect?: (object: THREE.Object3D | null) => void): void {
-    this.onSelect = onSelect;
+  setupClickHandler(
+    canvas: HTMLCanvasElement, 
+    onLeftClick?: (object: THREE.Object3D | null) => void,
+    onRightClick?: (object: THREE.Object3D | null) => void
+  ): void {
+    this.onSelect = onLeftClick;
 
+    // Left click - for actions (behaviors)
     canvas.addEventListener('click', (event) => {
       const rect = canvas.getBoundingClientRect();
       this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -42,9 +47,51 @@ export class ObjectSelector {
           selected = selected.parent;
         }
 
+        if (onLeftClick) {
+          onLeftClick(selected);
+        }
+      } else {
+        if (onLeftClick) {
+          onLeftClick(null);
+        }
+      }
+    });
+
+    // Right click - for editing
+    canvas.addEventListener('contextmenu', (event) => {
+      event.preventDefault(); // Prevent browser context menu
+      
+      const rect = canvas.getBoundingClientRect();
+      this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+
+      const selectableObjects = this.scene.children.filter(
+        obj => obj.userData.selectable === true && obj.userData.isWall !== true
+      );
+
+      const intersects = this.raycaster.intersectObjects(selectableObjects, true);
+
+      if (intersects.length > 0) {
+        let selected = intersects[0].object;
+
+        while (selected.parent && selected.parent !== this.scene) {
+          if (selected.userData.selectable === true) {
+            break;
+          }
+          selected = selected.parent;
+        }
+
         this.selectObject(selected);
+        if (onRightClick) {
+          onRightClick(selected);
+        }
       } else {
         this.deselectObject();
+        if (onRightClick) {
+          onRightClick(null);
+        }
       }
     });
   }

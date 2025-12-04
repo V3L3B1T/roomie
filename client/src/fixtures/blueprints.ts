@@ -4,6 +4,7 @@
  */
 
 import type { BlueprintResponse } from '../../../shared/types/blueprint';
+import { improvedChessBlueprint } from './chessImproved';
 
 /**
  * Simple chess board with pieces
@@ -376,7 +377,7 @@ export const lampBlueprint: BlueprintResponse = {
  * All fixture blueprints for easy access
  */
 export const fixtureBlueprints = {
-  chessboard: chessboardBlueprint,
+  chessboard: improvedChessBlueprint, // Using improved version with checkered board
   vehicle: vehicleBlueprint,
   lamp: lampBlueprint,
 };

@@ -22,6 +22,7 @@ export class InstanceRegistry {
     object3D.userData.instanceId = definition.instanceId;
     object3D.userData.shapeId = definition.shapeId;
     object3D.userData.definition = definition;
+    object3D.userData.selectable = true; // Mark as selectable for raycasting
 
     this.instances.set(definition.instanceId, { definition, object3D });
   }

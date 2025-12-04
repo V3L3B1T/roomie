@@ -114,3 +114,21 @@
 - [x] Integrate with webhook client and command executor
 - [x] Test TypeScript compilation and build
 - [ ] Commit to GitHub
+
+## Phase 14: Vertical Slice Polish (User Feedback)
+- [x] Fix mouse click interactions - raycasting not working
+- [x] Wire up click events to BehaviorEngine properly
+- [x] Add selectable flag to registered instances
+- [x] Add dev console logging for click events
+- [ ] Test lamp toggle with clicks (light_toggle behavior)
+- [x] Implement proper vehicle enter/exit flow
+- [x] Hide/show youBoi when entering/exiting vehicle
+- [x] Mount camera to vehicle in third-person chase mode
+- [x] Increase vehicle speed and acceleration significantly (20 m/s max, 15 m/s² accel)
+- [x] Make vehicle behavior config data-driven (maxSpeed, acceleration, cameraOffset)
+- [x] Wire camera and character references through BehaviorEngine
+- [ ] Add GLTF car model to fixtures
+- [ ] Add GLTF lamp model to fixtures
+- [ ] Add detailed chess set models (optional)
+- [ ] Test all interactions end-to-end
+- [ ] Commit to GitHub

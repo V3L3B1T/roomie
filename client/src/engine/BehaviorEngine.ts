@@ -3,6 +3,7 @@
  * Handles chess, vehicles, lights, and custom behaviors
  */
 
+import * as THREE from 'three';
 import type { BehaviorDefinition, GameEvent } from '../../../shared/types/blueprint';
 import type { InstanceRegistry } from './InstanceRegistry';
 import { ChessBoardBehavior } from '../behaviors/ChessBoardBehavior';
@@ -22,9 +23,25 @@ export interface Behavior {
 export class BehaviorEngine {
   private behaviors = new Map<string, Behavior>();
   private instanceRegistry: InstanceRegistry;
+  private camera: THREE.Camera | null = null;
+  private character: THREE.Object3D | null = null;
 
   constructor(instanceRegistry: InstanceRegistry) {
     this.instanceRegistry = instanceRegistry;
+  }
+
+  /**
+   * Set camera reference for behaviors that need it (e.g., vehicle)
+   */
+  setCamera(camera: THREE.Camera): void {
+    this.camera = camera;
+  }
+
+  /**
+   * Set character reference for behaviors that need it (e.g., vehicle)
+   */
+  setCharacter(character: THREE.Object3D): void {
+    this.character = character;
   }
 
   /**
@@ -50,6 +67,13 @@ export class BehaviorEngine {
 
       case 'vehicle':
         behavior = new VehicleBehavior(def, this.instanceRegistry);
+        // Pass camera and character references
+        if (this.camera) {
+          (behavior as VehicleBehavior).setCamera(this.camera);
+        }
+        if (this.character) {
+          (behavior as VehicleBehavior).setCharacter(this.character);
+        }
         break;
 
       case 'light_toggle':

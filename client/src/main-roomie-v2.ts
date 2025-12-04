@@ -61,6 +61,10 @@ const shapeRegistry = new ShapeRegistry();
 const instanceRegistry = new InstanceRegistry();
 const behaviorEngine = new BehaviorEngine(instanceRegistry);
 
+// Set camera and character references for behaviors (e.g., vehicle)
+behaviorEngine.setCamera(camera);
+behaviorEngine.setCharacter(youBoi);
+
 // ============================================================================
 // State Management
 // ============================================================================
@@ -333,6 +337,13 @@ setupMouseControls(renderer.domElement, cameraState, (looking: boolean) => {
 // Object Selection & Click Events (NEW ENGINE)
 // ============================================================================
 objectSelector.setupClickHandler(renderer.domElement, (selectedObject) => {
+  console.log('[Click] Click detected', selectedObject ? {
+    name: selectedObject.name,
+    instanceId: selectedObject.userData.instanceId,
+    shapeId: selectedObject.userData.shapeId,
+    selectable: selectedObject.userData.selectable,
+  } : 'no object');
+
   if (USE_NEW_ENGINE && selectedObject) {
     // Fire click event to behavior engine
     const instanceId = selectedObject.userData.instanceId;
@@ -342,8 +353,10 @@ objectSelector.setupClickHandler(renderer.domElement, (selectedObject) => {
         instanceId,
         position: selectedObject.position,
       };
+      console.log(`[Click] Firing GameEvent to BehaviorEngine:`, event);
       behaviorEngine.handleEvent(event);
-      console.log(`[Click] Fired event for instance: ${instanceId}`);
+    } else {
+      console.warn('[Click] Object has no instanceId:', selectedObject);
     }
   }
 

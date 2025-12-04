@@ -419,11 +419,31 @@ userInput.addEventListener('keypress', async (e) => {
     const loadingMsg = chatManager.addLoadingMessage();
 
     try {
-      // TODO: Call backend /api/roomie endpoint
-      // For now, this will be wired up once we test fixtures work
+      // Import webhook client dynamically to avoid circular dependencies
+      const { sendPromptToWebhook } = await import('./network/webhookClient');
+      
+      console.log('[Chat] Sending prompt to webhook:', text);
+      const blueprint = await sendPromptToWebhook(text);
+      console.log('[Chat] Received blueprint:', blueprint);
       
       chatManager.removeLoadingMessage(loadingMsg);
-      chatManager.addMessage('Backend integration coming soon! Use fixture buttons to test.', 'agent');
+      
+      // Apply the blueprint to the scene
+      const result = await applyBlueprint(
+        blueprint,
+        scene,
+        shapeRegistry,
+        instanceRegistry,
+        behaviorEngine
+      );
+      
+      if (result.success) {
+        chatManager.addMessage(blueprint.message, 'agent');
+        console.log(`[Chat] Applied successfully: ${result.newInstanceIds.length} new objects`);
+      } else {
+        chatManager.addMessage(`Failed: ${result.errors.join(', ')}`, 'agent');
+        console.error('[Chat] Errors:', result.errors);
+      }
       
     } catch (error) {
       chatManager.removeLoadingMessage(loadingMsg);
@@ -460,9 +480,10 @@ function updatePlayer(delta: number): void {
   if (deltaX !== 0 || deltaZ !== 0) {
     isMoving = true;
 
-    // World-space movement: W = north (-Z), S = south (+Z), A = west (-X), D = east (+X)
-    const moveX = deltaX;
-    const moveZ = deltaZ;
+    // Camera-relative movement: W = forward in camera direction
+    const angle = cameraState.yaw;
+    const moveX = deltaX * Math.cos(angle) - deltaZ * Math.sin(angle);
+    const moveZ = deltaX * Math.sin(angle) + deltaZ * Math.cos(angle);
 
     const speed = 5;
     youBoi.position.x += moveX * speed * delta;
@@ -477,7 +498,15 @@ function updatePlayer(delta: number): void {
       youBoi.position.z = Math.sin(angle) * radius;
     }
 
+    // Character faces movement direction
     youBoi.rotation.y = Math.atan2(moveX, moveZ);
+    
+    // Smooth camera follow: align camera behind character when moving
+    const targetYaw = Math.atan2(moveX, moveZ) + Math.PI;
+    const yawDiff = targetYaw - cameraState.yaw;
+    // Normalize angle difference to [-PI, PI]
+    const normalizedDiff = Math.atan2(Math.sin(yawDiff), Math.cos(yawDiff));
+    cameraState.yaw += normalizedDiff * 0.05; // Smooth interpolation
   } else {
     isMoving = false;
   }
@@ -487,6 +516,11 @@ function updatePlayer(delta: number): void {
     isJumping = true;
     jumpStartTime = performance.now() / 1000;
     baseYPosition = youBoi.position.y;
+    
+    // Trigger jump animation if available
+    if (youBoi.userData.animations?.jump) {
+      youBoi.userData.animations.jump.reset().play();
+    }
   }
 
   if (isJumping) {

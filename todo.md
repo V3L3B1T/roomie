@@ -144,3 +144,52 @@
 - [ ] Search for and add better car GLB model (deferred - primitives work well)
 - [x] Test all fixes end-to-end
 - [x] Commit to GitHub
+
+## Phase 16: Serious Polish Pass (User Feedback Round 2)
+
+### Camera & Movement
+- [x] Fix movement: W = forward relative to camera direction (camera-relative)
+- [x] Implement smooth camera follow that aligns behind character when moving
+- [x] Reduce need for right-click camera adjustment during movement
+
+### Character Model & Animation
+- [x] Fix GLB character Y-offset so feet are on ground (bounding box calculation)
+- [x] Ensure jump animation lands correctly with feet on ground
+- [x] Implement animation state machine (Idle, Walk/Run, Jump)
+- [x] Hook walk animation to movement input (W/A/S/D)
+
+### Better 3D Models
+- [ ] Find and download detailed car GLTF/GLB model
+- [ ] Replace car fixture with GLTF model
+- [ ] Find and download chess piece GLTF/GLB models (pawn, rook, bishop, knight, queen, king)
+- [ ] Replace chess fixture pieces with GLTF models
+- [ ] Verify checkered board pattern is visually clear
+
+### Input Model (Already Done - Verify)
+- [ ] Verify left-click triggers behaviors (lamp toggle, chess move)
+- [ ] Verify right-click opens object editor
+- [ ] Test raycasting → left-click → BehaviorEngine.handleEvent
+- [ ] Test raycasting → right-click → property editor UI
+
+### Vehicle Behavior Refinement
+- [ ] Verify camera switches to third-person chase mode when entering car
+- [ ] Verify youBoi is hidden when driving
+- [ ] Increase car speed and acceleration further
+- [ ] Ensure W = forward relative to car direction when driving
+- [ ] Verify vehicle config is data-driven (maxSpeed, acceleration, cameraOffset)
+
+### AI Blueprint Path
+- [ ] Enable n8n webhook integration for AI prompts
+- [ ] Add logging to track: chat → backend → n8n → BlueprintResponse → applyBlueprint()
+- [ ] Test with "create a chessboard" prompt
+- [ ] Test with "spawn a car" prompt
+- [ ] Verify AI blueprints flow through same engine as fixtures
+
+### Final Testing
+- [ ] Test camera/movement feel (W = forward, minimal babysitting)
+- [ ] Test character stands and animates correctly
+- [ ] Test car drives well with nice model
+- [ ] Test chess pieces look good and are interactive
+- [ ] Test left-click vs right-click distinction
+- [ ] Test at least one AI prompt end-to-end
+- [ ] Commit to GitHub

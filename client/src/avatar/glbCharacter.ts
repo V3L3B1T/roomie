@@ -1,6 +1,6 @@
 /**
  * GLB Character Loader
- * Loads the provided GLB character model to replace youBoi
+ * Loads the provided GLB character model with proper positioning and animations
  */
 
 import * as THREE from 'three';
@@ -12,10 +12,17 @@ export interface CharacterState {
   state: 'standing' | 'sitting';
   walkCycle: number;
   model?: THREE.Group;
+  mixer?: THREE.AnimationMixer;
+  animations?: {
+    idle?: THREE.AnimationAction;
+    walk?: THREE.AnimationAction;
+    run?: THREE.AnimationAction;
+    jump?: THREE.AnimationAction;
+  };
 }
 
 /**
- * Loads the GLB character model
+ * Loads the GLB character model with proper positioning
  */
 export async function loadGLBCharacter(): Promise<THREE.Group & { userData: CharacterState }> {
   const loader = new GLTFLoader();
@@ -27,6 +34,53 @@ export async function loadGLBCharacter(): Promise<THREE.Group & { userData: Char
         const character = gltf.scene as THREE.Group & { userData: CharacterState };
         character.name = 'GLBCharacter';
         
+        // Calculate bounding box to find the model's bottom
+        const box = new THREE.Box3().setFromObject(character);
+        const height = box.max.y - box.min.y;
+        const bottomOffset = -box.min.y; // Offset to put feet on ground
+        
+        console.log('[GLBCharacter] Model dimensions:', {
+          height,
+          min: box.min.y,
+          max: box.max.y,
+          bottomOffset,
+        });
+
+        // Set up animation mixer if animations exist
+        let mixer: THREE.AnimationMixer | undefined;
+        const animations: CharacterState['animations'] = {};
+        
+        if (gltf.animations && gltf.animations.length > 0) {
+          mixer = new THREE.AnimationMixer(character);
+          
+          console.log('[GLBCharacter] Found animations:', gltf.animations.map(a => a.name));
+          
+          // Try to find common animation names
+          gltf.animations.forEach((clip) => {
+            const name = clip.name.toLowerCase();
+            const action = mixer!.clipAction(clip);
+            
+            if (name.includes('idle') || name.includes('stand')) {
+              animations.idle = action;
+              action.play(); // Start with idle
+            } else if (name.includes('walk')) {
+              animations.walk = action;
+            } else if (name.includes('run')) {
+              animations.run = action;
+            } else if (name.includes('jump')) {
+              animations.jump = action;
+              action.setLoop(THREE.LoopOnce, 1);
+              action.clampWhenFinished = true;
+            }
+          });
+          
+          // If no named animations found, use first animation as idle
+          if (!animations.idle && gltf.animations.length > 0) {
+            animations.idle = mixer.clipAction(gltf.animations[0]);
+            animations.idle.play();
+          }
+        }
+        
         // Initialize userData
         character.userData = {
           id: 'glb-character',
@@ -34,6 +88,8 @@ export async function loadGLBCharacter(): Promise<THREE.Group & { userData: Char
           state: 'standing',
           walkCycle: 0,
           model: gltf.scene,
+          mixer,
+          animations,
         };
 
         // Enable shadows for all meshes
@@ -44,13 +100,16 @@ export async function loadGLBCharacter(): Promise<THREE.Group & { userData: Char
           }
         });
 
-        // Scale and position the model (adjust as needed)
-        character.scale.set(1, 1, 1);
-        character.position.y = 0;
+        // Position the model so feet are on the ground
+        character.position.y = bottomOffset;
 
         console.log('[GLBCharacter] Loaded successfully', {
           children: character.children.length,
-          animations: gltf.animations.length,
+          animationCount: gltf.animations.length,
+          hasIdle: !!animations.idle,
+          hasWalk: !!animations.walk,
+          hasJump: !!animations.jump,
+          yOffset: bottomOffset,
         });
 
         resolve(character);
@@ -92,19 +151,55 @@ export function createFallbackCharacter(): THREE.Group & { userData: CharacterSt
 }
 
 /**
- * Update character animation (placeholder for now)
+ * Update character animation based on movement state
  */
 export function updateGLBCharacterAnimation(
   character: THREE.Group & { userData: CharacterState },
   isMoving: boolean,
   delta: number
 ): void {
-  if (!character.userData.model) return;
+  const { mixer, animations } = character.userData;
+  
+  if (!mixer || !animations) return;
 
-  // TODO: Add walking animation if GLB has animations
-  // For now, just update walk cycle for future use
+  // Update animation mixer
+  mixer.update(delta);
+
+  // Switch between idle and walk animations
+  if (isMoving) {
+    // Transition to walk animation
+    if (animations.walk && !animations.walk.isRunning()) {
+      if (animations.idle) {
+        animations.idle.fadeOut(0.2);
+      }
+      animations.walk.reset().fadeIn(0.2).play();
+    }
+  } else {
+    // Transition to idle animation
+    if (animations.idle && !animations.idle.isRunning()) {
+      if (animations.walk) {
+        animations.walk.fadeOut(0.2);
+      }
+      animations.idle.reset().fadeIn(0.2).play();
+    }
+  }
+
+  // Update walk cycle for compatibility
   if (isMoving) {
     character.userData.walkCycle += delta * 5;
+  }
+}
+
+/**
+ * Trigger jump animation
+ */
+export function playJumpAnimation(
+  character: THREE.Group & { userData: CharacterState }
+): void {
+  const { animations } = character.userData;
+  
+  if (animations?.jump) {
+    animations.jump.reset().play();
   }
 }
 
